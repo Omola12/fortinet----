@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortinet Admin Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a5c4a 0%, #1a3a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            border-radius: 32px;
+            padding: 48px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .login-card h1 {
+            color: #0a5c4a;
+            margin-bottom: 8px;
+        }
+        .login-card h1 span {
+            color: #ffd700;
+        }
+        .login-card p {
+            color: #666;
+            margin-bottom: 32px;
+        }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            margin: 12px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #0a5c4a;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0a5c4a 0%, #1a3a2e 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1><span>FORTINET</span> ADMIN</h1>
+        <p>Complaint Management System</p>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login to Dashboard</button>
+        </form>
+        <div id="error"></div>
+    </div>
+
+    <script>
+        const ADMIN_USERNAME = "fortinet";
+        const ADMIN_PASSWORD = "fortinet123";
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                localStorage.setItem('adminLoggedIn', 'true');
+                window.location.href = 'admin-panel.html';
+            } else {
+                document.getElementById('error').innerHTML = '<div class="error">❌ Invalid credentials</div>';
+            }
+        });
+    </script>
+</body>
+</html>

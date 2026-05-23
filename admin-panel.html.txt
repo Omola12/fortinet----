@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortinet Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #0a5c4a 0%, #1a3a2e 100%);
+            color: white;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 span {
+            color: #ffd700;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0a5c4a;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px auto;
+            max-width: 1400px;
+            padding: 0 24px;
+        }
+        .filter-btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            background: #e0e0e0;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: #0a5c4a;
+            color: white;
+        }
+        .refresh-btn {
+            background: #17a2b8;
+            color: white;
+        }
+        .complaints-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 24px 40px;
+        }
+        .complaint-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 5px solid #ffc107;
+        }
+        .complaint-card.resolved {
+            border-left-color: #28a745;
+        }
+        .complaint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .complaint-id {
+            font-weight: bold;
+            color: #0a5c4a;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-Pending { background: #fff3cd; color: #856404; }
+        .status-Replied { background: #cfe2ff; color: #084298; }
+        .status-Resolved { background: #d4edda; color: #155724; }
+        .complaint-details {
+            margin: 16px 0;
+            line-height: 1.6;
+        }
+        .reply-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-reply {
+            background: #0a5c4a;
+            color: white;
+        }
+        .btn-resolve {
+            background: #28a745;
+            color: white;
+            margin-left: 10px;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            margin-left: 10px;
+        }
+        .existing-reply {
+            background: #e3f2fd;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>FORTINET</span> Support Dashboard</h1>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterComplaints('all')">All</button>
+        <button class="filter-btn" onclick="filterComplaints('Pending')">Pending</button>
+        <button class="filter-btn" onclick="filterComplaints('Replied')">Replied</button>
+        <button class="filter-btn" onclick="filterComplaints('Resolved')">Resolved</button>
+        <button class="filter-btn refresh-btn" onclick="loadComplaints()">🔄 Refresh</button>
+    </div>
+
+    <div class="complaints-container" id="complaintsContainer">
+        <div class="loading">Loading complaints...</div>
+    </div>
+
+    <script>
+        const API_URL = "/api";
+
+        if (localStorage.getItem('adminLoggedIn') !== 'true') {
+            window.location.href = 'admin-login.html';
+        }
+
+        let allComplaints = [];
+        let currentFilter = 'all';
+
+        async function loadComplaints() {
+            const container = document.getElementById('complaintsContainer');
+            container.innerHTML = '<div class="loading">Loading complaints...</div>';
+            
+            try {
+                const res = await fetch(`${API_URL}/complaints`);
+                const data = await res.json();
+                
+                if (data.complaints) {
+                    allComplaints = data.complaints;
+                    updateStats();
+                    displayComplaints();
+                } else {
+                    container.innerHTML = '<div class="loading">No complaints found</div>';
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="loading">Error loading complaints. Make sure the server is running.</div>';
+            }
+        }
+
+        function updateStats() {
+            const total = allComplaints.length;
+            const pending = allComplaints.filter(c => c.status === 'Pending').length;
+            const replied = allComplaints.filter(c => c.status === 'Replied').length;
+            const resolved = allComplaints.filter(c => c.status === 'Resolved').length;
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card"><div class="stat-number">${total}</div><div>Total</div></div>
+                <div class="stat-card"><div class="stat-number">${pending}</div><div>Pending</div></div>
+                <div class="stat-card"><div class="stat-number">${replied}</div><div>Replied</div></div>
+                <div class="stat-card"><div class="stat-number">${resolved}</div><div>Resolved</div></div>
+            `;
+        }
+
+        function displayComplaints() {
+            let filtered = allComplaints;
+            if (currentFilter !== 'all') {
+                filtered = allComplaints.filter(c => c.status === currentFilter);
+            }
+            
+            const container = document.getElementById('complaintsContainer');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="loading">No complaints in this category</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            filtered.forEach(c => {
+                const isResolved = c.status === 'Resolved';
+                container.innerHTML += `
+                    <div class="complaint-card ${isResolved ? 'resolved' : ''}">
+                        <div class="complaint-header">
+                            <span class="complaint-id">🎫 ${c.id}</span>
+                            <span class="status-badge status-${c.status}">${c.status}</span>
+                        </div>
+                        <div class="complaint-details">
+                            <p><strong>👤 Customer:</strong> ${c.name} (${c.email})</p>
+                            <p><strong>📌 Subject:</strong> ${c.subject}</p>
+                            <p><strong>📂 Category:</strong> ${c.category}</p>
+                            <p><strong>📝 Message:</strong> ${c.message}</p>
+                            <p><strong>📅 Date:</strong> ${c.date}</p>
+                            ${c.reply ? `<div class="existing-reply"><strong>📝 Your Reply:</strong><br>${c.reply}<br><small>Sent: ${c.replyDate}</small></div>` : ''}
+                        </div>
+                        <div class="reply-section">
+                            <textarea id="reply-${c.id}" placeholder="Type your response..."></textarea>
+                            <div>
+                                <button class="btn btn-reply" onclick="sendReply('${c.id}')">📤 Send Reply</button>
+                                ${!isResolved ? `<button class="btn btn-resolve" onclick="markResolved('${c.id}')">✅ Mark Resolved</button>` : ''}
+                                <button class="btn btn-delete" onclick="deleteComplaint('${c.id}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function sendReply(complaintId) {
+            const reply = document.getElementById(`reply-${complaintId}`).value.trim();
+            if (!reply) return alert('Please enter a reply');
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            
+            try {
+                await fetch(`${API_URL}/complaints/${complaintId}/reply`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reply: reply })
+                });
+                alert('✅ Reply sent successfully!');
+                loadComplaints();
+            } catch (err) {
+                alert('❌ Error sending reply');
+                btn.disabled = false;
+                btn.textContent = '📤 Send Reply';
+            }
+        }
+
+        async function markResolved(complaintId) {
+            if (!confirm('Mark this complaint as resolved?')) return;
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+            
+            try {
+                await fetch(`${API_URL}/complaints/${complaintId}/resolve`, {
+                    method: 'PUT'
+                });
+                alert('✅ Complaint marked as resolved!');
+                loadComplaints();
+            } catch (err) {
+                alert('❌ Error');
+                btn.disabled = false;
+                btn.textContent = '✅ Mark Resolved';
+            }
+        }
+
+        async function deleteComplaint(complaintId) {
+            if (!confirm('Delete this complaint permanently?')) return;
+            
+            try {
+                await fetch(`${API_URL}/complaints/${complaintId}`, {
+                    method: 'DELETE'
+                });
+                alert('✅ Complaint deleted!');
+                loadComplaints();
+            } catch (err) {
+                alert('❌ Error deleting');
+            }
+        }
+
+        function filterComplaints(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            displayComplaints();
+        }
+
+        function logout() {
+            localStorage.removeItem('adminLoggedIn');
+            window.location.href = 'admin-login.html';
+        }
+
+        loadComplaints();
+        setInterval(loadComplaints, 30000);
+    </script>
+</body>
+</html>
